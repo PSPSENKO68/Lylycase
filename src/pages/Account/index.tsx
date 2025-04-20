@@ -331,9 +331,9 @@ export function Account() {
   };
 
   // Check if order can be cancelled
-  // Only allow cancellation for pending or processing orders
+  // Only allow cancellation for pending orders
   const canCancelOrder = (status: string) => {
-    return ['pending', 'processing'].includes(status);
+    return status === 'pending';
   };
 
   if (loading) {

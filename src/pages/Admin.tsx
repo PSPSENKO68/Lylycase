@@ -1530,6 +1530,23 @@ function Orders() {
       const promises: Promise<void>[] = [];
       const selectedOrders = orders.filter(order => selectedOrderIds.includes(order.id));
       
+      // Update status of pending orders to processing
+      for (const order of selectedOrders) {
+        if (order.status === 'pending') {
+          const { error } = await supabase
+            .from('orders')
+            .update({ status: 'processing' })
+            .eq('id', order.id);
+          
+          if (error) {
+            console.error(`Error updating order ${order.id} status:`, error);
+          } else {
+            // Update local state
+            order.status = 'processing';
+          }
+        }
+      }
+      
       // Process each selected order
       for (const order of selectedOrders) {
         // Process each item in the order
@@ -1610,6 +1627,23 @@ function Orders() {
         alert('No orders found for the selected filters');
         setDownloadLoading(false);
         return;
+      }
+
+      // Update status of pending orders to processing
+      for (const order of filteredOrdersByDate) {
+        if (order.status === 'pending') {
+          const { error } = await supabase
+            .from('orders')
+            .update({ status: 'processing' })
+            .eq('id', order.id);
+          
+          if (error) {
+            console.error(`Error updating order ${order.id} status:`, error);
+          } else {
+            // Update local state
+            order.status = 'processing';
+          }
+        }
       }
 
       const zip = new JSZip();

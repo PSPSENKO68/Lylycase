@@ -1,0 +1,85 @@
+@startuml LYLYCASE System Use Case Diagram
+
+' Define actors
+actor "Customer" as Customer
+actor "Admin" as Admin
+actor "Payment System" as PaymentSystem
+actor "Shipping Provider" as ShippingProvider
+
+' Define use case packages
+package "Authentication" {
+  usecase "Login" as CustomerLogin
+  usecase "Register" as Register
+  usecase "Confirm Email" as ConfirmEmail
+  usecase "Reset Password" as ResetPassword
+  usecase "Forgot Password" as ForgotPassword
+}
+
+package "Admin Management" {
+  usecase "Admin Login" as AdminLogin
+  usecase "Admin Reset Password" as AdminResetPassword
+  usecase "Admin Forgot Password" as AdminForgotPassword
+  usecase "Manage Products" as ManageProducts
+  usecase "Manage Orders" as ManageOrders
+  usecase "Manage Users" as ManageUsers
+}
+
+package "Shopping" {
+  usecase "Browse Products" as BrowseProducts
+  usecase "Custom Design" as CustomDesign
+  usecase "Add to Cart" as AddToCart
+  usecase "View Cart" as ViewCart
+  usecase "Checkout" as Checkout
+}
+
+package "Payment" {
+  usecase "Process Payment" as ProcessPayment
+  usecase "VNPay Integration" as VNPayIntegration
+}
+
+package "Order Management" {
+  usecase "View Order Confirmation" as ViewOrderConfirmation
+  usecase "Track Order" as TrackOrder
+  usecase "Manage Account" as ManageAccount
+}
+
+' Define relationships
+' Customer relationships
+Customer --> BrowseProducts
+Customer --> CustomDesign
+Customer --> AddToCart
+Customer --> ViewCart
+Customer --> Checkout
+Customer --> CustomerLogin
+Customer --> Register
+Customer --> ForgotPassword
+Customer --> ResetPassword
+Customer --> ConfirmEmail
+Customer --> ViewOrderConfirmation
+Customer --> TrackOrder
+Customer --> ManageAccount
+
+' Admin relationships
+Admin --> AdminLogin
+Admin --> AdminForgotPassword
+Admin --> AdminResetPassword
+Admin --> ManageProducts
+Admin --> ManageOrders
+Admin --> ManageUsers
+
+' External systems
+PaymentSystem --> ProcessPayment
+PaymentSystem --> VNPayIntegration
+ShippingProvider --> TrackOrder
+
+' Include relationships
+Checkout ..> ProcessPayment : <<include>>
+ProcessPayment ..> VNPayIntegration : <<include>>
+ViewOrderConfirmation ..> TrackOrder : <<include>>
+
+' Extend relationships
+CustomerLogin ..> ManageAccount : <<extend>>
+BrowseProducts ..> CustomDesign : <<extend>>
+ViewCart ..> Checkout : <<extend>>
+
+@enduml 

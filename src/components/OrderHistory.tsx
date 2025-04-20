@@ -51,7 +51,7 @@ export default function OrderHistory({ userId }: OrderHistoryProps) {
       
       // Only allow cancellation if the order is in pending status
       if (order.status !== 'pending') {
-        setError('Only pending orders can be cancelled');
+        setError('Chỉ những đơn hàng ở trạng thái chờ xác nhận mới có thể hủy');
         return;
       }
       
@@ -66,7 +66,7 @@ export default function OrderHistory({ userId }: OrderHistoryProps) {
       
       // Prevent cancellation if GHN order exists
       if (data.has_ghn_order) {
-        setError('This order cannot be cancelled because shipping has been arranged');
+        setError('Đơn hàng này không thể hủy vì đã được sắp xếp vận chuyển');
         return;
       }
       

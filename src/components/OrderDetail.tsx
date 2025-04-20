@@ -169,6 +169,21 @@ export function OrderDetail() {
         throw orderError;
       }
 
+      // Update order status to "processing" if it's currently "pending"
+      if (orderData && orderData.status === 'pending') {
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({ status: 'processing' })
+          .eq('id', orderId);
+        
+        if (updateError) {
+          console.error('Error updating order status:', updateError);
+        } else {
+          // Update the local state with the new status
+          orderData.status = 'processing';
+        }
+      }
+
       setOrder(orderData as OrderDetail);
 
       // Fetch order items
