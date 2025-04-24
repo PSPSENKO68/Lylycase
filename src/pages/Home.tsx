@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader, AlertCircle } from 'lucide-react';
+import { Loader, AlertCircle, ShieldCheck, Printer, Recycle, Clock, Star, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 // Type definitions
@@ -31,12 +31,84 @@ interface GroupedCases {
   };
 }
 
+interface Review {
+  id: number;
+  name: string;
+  rating: number;
+  comment: string;
+  date: string;
+  avatar?: string;
+}
+
 // Constants
 const FALLBACK_CASE_IMAGE = "https://images.unsplash.com/photo-1606041011872-596597976b25?auto=format&fit=crop&q=80";
 const BRANDS = ['iPhone', 'Samsung', 'Google Pixel'];
 const CASE_TYPES = ['Tough Case', 'Clear Case', 'Silicone Case', 'Leather Case', 'MagSafe Case'];
 const CUSTOMIZABLE_CASE_TYPES = ['Tough Case', 'Silicone Case', 'Clear Case'];
 const DIRECT_BUY_CASE_TYPES = ['Leather Case', 'MagSafe Case'];
+
+// Partner logos - reliable image URLs
+const PARTNERS = [
+  { name: "OPPO", logo: "https://logos-world.net/wp-content/uploads/2020/07/Oppo-Logo.png" },
+  { name: "Samsung", logo: "https://logos-world.net/wp-content/uploads/2020/04/Samsung-Logo.png" },
+  { name: "Apple", logo: "https://logos-world.net/wp-content/uploads/2020/04/Apple-Logo.png" },
+  { name: "Viettel", logo: "https://upload.wikimedia.org/wikipedia/commons/f/fe/Viettel_logo_2021.svg" },
+  { name: "MB Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/2/25/Logo_MB_new.png" },
+  { name: "Vinaphone", logo: "https://upload.wikimedia.org/wikipedia/commons/9/94/Logo_Vinaphone_2018.png" },
+  { name: "Vietnam Airlines", logo: "https://upload.wikimedia.org/wikipedia/vi/b/bc/Vietnam_Airlines_logo.svg" },
+];
+
+// User reviews - fake data
+const USER_REVIEWS: Review[] = [
+  {
+    id: 1,
+    name: "Nguyễn Văn A",
+    rating: 5,
+    comment: "Chất lượng ốp lưng rất tốt, tôi đã làm rơi điện thoại nhiều lần nhưng không bị hư hại gì. Thiết kế cũng rất đẹp!",
+    date: "05/10/2023",
+    avatar: "https://i.pravatar.cc/150?img=1"
+  },
+  {
+    id: 2,
+    name: "Trần Thị B",
+    rating: 4,
+    comment: "Tôi rất thích mẫu ốp lưng tùy chỉnh của mình. Chỉ tiếc là phải đợi giao hàng hơi lâu.",
+    date: "23/11/2023",
+    avatar: "https://i.pravatar.cc/150?img=2"
+  },
+  {
+    id: 3,
+    name: "Lê Văn C",
+    rating: 5,
+    comment: "Chính sách bảo hành rất tốt. Ốp lưng của tôi bị nứt sau 3 tháng và đã được đổi miễn phí.",
+    date: "12/12/2023",
+    avatar: "https://i.pravatar.cc/150?img=3"
+  },
+  {
+    id: 4,
+    name: "Phạm Thị D",
+    rating: 5,
+    comment: "In ấn sắc nét, màu sắc đẹp. Sau 6 tháng sử dụng vẫn không bị phai màu hay xuống cấp.",
+    date: "15/01/2024",
+    avatar: "https://i.pravatar.cc/150?img=4"
+  },
+  {
+    id: 5,
+    name: "Hoàng Văn E",
+    rating: 4,
+    comment: "Dịch vụ khách hàng rất chu đáo. Tôi được tư vấn nhiệt tình để chọn được mẫu ốp lưng phù hợp.",
+    date: "20/02/2024",
+    avatar: "https://i.pravatar.cc/150?img=5"
+  },
+  {
+    id: 6,
+    name: "Ngô Thị F",
+    rating: 5,
+    comment: "Đây là lần thứ 3 tôi mua ốp lưng từ cửa hàng này. Chất lượng luôn ổn định và giá cả hợp lý.",
+    date: "18/03/2024",
+    avatar: "https://i.pravatar.cc/150?img=6"
+  },
+];
 
 // Helper function to check if an image exists
 const imageExists = async (url: string): Promise<boolean> => {
@@ -327,196 +399,170 @@ export function Home() {
             </div>
           )}
 
-          {/* Brand-Specific Collections */}
-          {!isLoading && (
-            <>
-              {/* iPhone Cases */}
-              <div className="mb-16">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-bold">iPhone Cases</h3>
+          {/* Warranty Policies */}
+          <div className="mb-20">
+            <h2 className="text-3xl font-bold mb-12 text-center">Chính Sách Bảo Hành</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center text-center">
+                <div className="mb-4 bg-blue-50 p-4 rounded-full">
+                  <ShieldCheck className="h-8 w-8 text-blue-600" />
                 </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                  {CASE_TYPES.map(caseTypeName => {
-                    const caseType = groupedCases['iPhone']?.cases[caseTypeName]?.[0];
-                    if (!caseType) return null;
-                    
-                    // Try to get an iPhone model to use for the image
-                    const model = groupedCases['iPhone']?.models[0];
-                    const modelName = model?.name || '';
-                    
-                    return (
-                      <div key={`iphone-${caseTypeName}`} className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
-                        <div className="aspect-square overflow-hidden">
-                          <img 
-                            src={getCaseImageUrl(caseType, 'iPhone', modelName)}
-                            alt={`iPhone ${caseTypeName}`}
-                            className="w-full h-full object-cover transition group-hover:scale-105"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = FALLBACK_CASE_IMAGE;
-                            }}
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h4 className="font-medium">{caseTypeName}</h4>
-                          <div className="flex justify-between items-center mt-1">
-                            <p className="text-sm text-gray-600">${caseType.price.toFixed(2)}</p>
-                            {isCaseCustomizable(caseTypeName) ? (
-                              <Link 
-                                to={`/custom-design?caseType=${encodeURIComponent(caseTypeName)}`}
-                                className="text-xs text-blue-600 hover:underline"
-                              >
-                                Customize
-                              </Link>
-                            ) : isDirectBuyCase(caseTypeName) ? (
-                              <Link 
-                                to={`/payment?caseType=${encodeURIComponent(caseTypeName)}&brand=iPhone&model=${encodeURIComponent(modelName)}`}
-                                className="text-xs text-indigo-600 hover:underline font-medium"
-                              >
-                                Buy
-                              </Link>
-                            ) : (
-                              <Link 
-                                to={`/products?caseType=${encodeURIComponent(caseTypeName)}`}
-                                className="text-xs text-blue-600 hover:underline"
-                              >
-                                View
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <h3 className="text-xl font-bold mb-2">Kiểm Tra Hàng Trước Khi Nhận</h3>
+                <p className="text-gray-600">Nếu không hài lòng có thể không nhận hàng. Chúng tôi cam kết chất lượng sản phẩm trước khi giao đến tay khách hàng.</p>
               </div>
               
-              {/* Samsung Cases */}
-              <div className="mb-16">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-bold">Samsung Cases</h3>
+              <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center text-center">
+                <div className="mb-4 bg-indigo-50 p-4 rounded-full">
+                  <Clock className="h-8 w-8 text-indigo-600" />
                 </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                  {CASE_TYPES.map(caseTypeName => {
-                    const caseType = groupedCases['Samsung']?.cases[caseTypeName]?.[0];
-                    if (!caseType) return null;
-                    
-                    // Try to get a Samsung model to use for the image
-                    const model = groupedCases['Samsung']?.models[0];
-                    const modelName = model?.name || '';
-                    
-                    return (
-                      <div key={`samsung-${caseTypeName}`} className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
-                        <div className="aspect-square overflow-hidden">
-                          <img 
-                            src={getCaseImageUrl(caseType, 'Samsung', modelName)}
-                            alt={`Samsung ${caseTypeName}`}
-                            className="w-full h-full object-cover transition group-hover:scale-105"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = FALLBACK_CASE_IMAGE;
-                            }}
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h4 className="font-medium">{caseTypeName}</h4>
-                          <div className="flex justify-between items-center mt-1">
-                            <p className="text-sm text-gray-600">${caseType.price.toFixed(2)}</p>
-                            {isCaseCustomizable(caseTypeName) ? (
-                              <Link 
-                                to={`/custom-design?caseType=${encodeURIComponent(caseTypeName)}`}
-                                className="text-xs text-blue-600 hover:underline"
-                              >
-                                Customize
-                              </Link>
-                            ) : isDirectBuyCase(caseTypeName) ? (
-                              <Link 
-                                to={`/payment?caseType=${encodeURIComponent(caseTypeName)}&brand=Samsung&model=${encodeURIComponent(modelName)}`}
-                                className="text-xs text-indigo-600 hover:underline font-medium"
-                              >
-                                Buy
-                              </Link>
-                            ) : (
-                              <Link 
-                                to={`/products?caseType=${encodeURIComponent(caseTypeName)}`}
-                                className="text-xs text-blue-600 hover:underline"
-                              >
-                                View
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <h3 className="text-xl font-bold mb-2">Bảo Hành 6 Tháng</h3>
+                <p className="text-gray-600">Bảo hành 1 đổi 1 không điều kiện trong vòng 6 tháng. Áp dụng cho tất cả các sản phẩm từ cửa hàng chúng tôi.</p>
               </div>
               
-              {/* Google Pixel Cases */}
-              <div className="mb-16">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-bold">Google Pixel Cases</h3>
+              <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition flex flex-col items-center text-center">
+                <div className="mb-4 bg-green-50 p-4 rounded-full">
+                  <Recycle className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Giá Gốc Tận Xưởng</h3>
+                <p className="text-gray-600">Giá cả phải chăng trực tiếp từ xưởng sản xuất. Không qua trung gian, giúp tiết kiệm chi phí cho khách hàng.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Printing Technology */}
+          <div className="mb-20">
+            <h2 className="text-3xl font-bold mb-12 text-center">Công Nghệ In Ấn Hiện Đại</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div>
+                <img 
+                  src="https://cms.cloudinary.vpsvc.com/images/c_scale,dpr_auto,f_auto,q_auto:best,t_productPageHeroGalleryTransformation_v2,w_auto/site-merchandising/4f54d973-fdec-4445-a879-83c424dbf4a6/en-au/ANZS1695-Imagery-Optimisation-Custom-Phone-Cases-PDP-marquee-005"
+                  alt="Printing Technology"
+                  className="rounded-xl shadow-lg w-full h-auto"
+                />
+              </div>
+              <div>
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <div className="bg-purple-50 p-3 rounded-full mr-4">
+                      <Printer className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <h3 className="text-xl font-bold">Công Nghệ UV Led</h3>
+                  </div>
+                  <p className="text-gray-600 ml-16">Máy in UV Led hiện đại nhất, cho phép in hình ảnh sắc nét lên nhiều bề mặt vật liệu, đặc biệt là các loại ốp lưng điện thoại.</p>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                  {CASE_TYPES.map(caseTypeName => {
-                    const caseType = groupedCases['Google Pixel']?.cases[caseTypeName]?.[0];
-                    if (!caseType) return null;
-                    
-                    // Try to get a Pixel model to use for the image
-                    const model = groupedCases['Google Pixel']?.models[0];
-                    const modelName = model?.name || '';
-                    
-                    return (
-                      <div key={`pixel-${caseTypeName}`} className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
-                        <div className="aspect-square overflow-hidden">
-                          <img 
-                            src={getCaseImageUrl(caseType, 'Google Pixel', modelName)}
-                            alt={`Google Pixel ${caseTypeName}`}
-                            className="w-full h-full object-cover transition group-hover:scale-105"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = FALLBACK_CASE_IMAGE;
-                            }}
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h4 className="font-medium">{caseTypeName}</h4>
-                          <div className="flex justify-between items-center mt-1">
-                            <p className="text-sm text-gray-600">${caseType.price.toFixed(2)}</p>
-                            {isCaseCustomizable(caseTypeName) ? (
-                              <Link 
-                                to={`/custom-design?caseType=${encodeURIComponent(caseTypeName)}`}
-                                className="text-xs text-blue-600 hover:underline"
-                              >
-                                Customize
-                              </Link>
-                            ) : isDirectBuyCase(caseTypeName) ? (
-                              <Link 
-                                to={`/payment?caseType=${encodeURIComponent(caseTypeName)}&brand=Google%20Pixel&model=${encodeURIComponent(modelName)}`}
-                                className="text-xs text-indigo-600 hover:underline font-medium"
-                              >
-                                Buy
-                              </Link>
-                            ) : (
-                              <Link 
-                                to={`/products?caseType=${encodeURIComponent(caseTypeName)}`}
-                                className="text-xs text-blue-600 hover:underline"
-                              >
-                                View
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <div className="bg-orange-50 p-3 rounded-full mr-4">
+                      <Printer className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <h3 className="text-xl font-bold">Công Nghệ Nhiệt Thăng Hoa</h3>
+                  </div>
+                  <p className="text-gray-600 ml-16">Kỹ thuật in nhiệt hiện đại giúp màu sắc thấm sâu vào bề mặt vật liệu, bền màu, không bong tróc sau thời gian dài sử dụng.</p>
+                </div>
+                
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <div className="bg-red-50 p-3 rounded-full mr-4">
+                      <Printer className="h-6 w-6 text-red-600" />
+                    </div>
+                    <h3 className="text-xl font-bold">Công Nghệ DTF (Direct to Film)</h3>
+                  </div>
+                  <p className="text-gray-600 ml-16">Phương pháp in trực tiếp lên màng film, sau đó chuyển lên vật liệu, tạo ra hình ảnh có độ bền cao và màu sắc rực rỡ.</p>
                 </div>
               </div>
-            </>
-          )}
+            </div>
+          </div>
+
+          {/* Partner Logos */}
+          <div className="mb-20">
+            <h2 className="text-3xl font-bold mb-12 text-center">Đối Tác Của Chúng Tôi</h2>
+            <div className="relative overflow-hidden">
+              <div className="flex animate-marquee">
+                {PARTNERS.concat(PARTNERS).map((partner, index) => (
+                  <div key={index} className="mx-6 shrink-0 flex items-center justify-center h-24 w-40">
+                    <img 
+                      src={partner.logo} 
+                      alt={partner.name}
+                      className="max-h-16 max-w-full object-contain filter grayscale hover:grayscale-0 transition"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <style>
+              {`
+                @keyframes marquee {
+                  0% { transform: translateX(0); }
+                  100% { transform: translateX(-50%); }
+                }
+                .animate-marquee {
+                  animation: marquee 30s linear infinite;
+                }
+              `}
+            </style>
+          </div>
+
+          {/* Customer Reviews */}
+          <div className="mb-20">
+            <h2 className="text-3xl font-bold mb-12 text-center">Nhận Xét Từ Khách Hàng</h2>
+            <div className="relative overflow-hidden">
+              <div className="flex animate-slide">
+                {USER_REVIEWS.concat(USER_REVIEWS).map((review, index) => (
+                  <div key={index} className="mx-4 shrink-0 w-80 bg-white p-6 rounded-xl shadow-sm">
+                    <div className="flex items-center mb-4">
+                      <div className="mr-4">
+                        {review.avatar ? (
+                          <img 
+                            src={review.avatar} 
+                            alt={review.name}
+                            className="h-12 w-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-500 font-medium">{review.name.charAt(0)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-medium">{review.name}</h4>
+                        <div className="flex">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-2">{review.comment}</p>
+                    <p className="text-gray-400 text-xs">{review.date}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-center mt-8">
+              <Link
+                to="/reviews"
+                className="flex items-center text-blue-600 hover:text-blue-800 transition font-medium"
+              >
+                Xem tất cả đánh giá
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+            <style>
+              {`
+                @keyframes slide {
+                  0% { transform: translateX(0); }
+                  100% { transform: translateX(-50%); }
+                }
+                .animate-slide {
+                  animation: slide 40s linear infinite;
+                }
+              `}
+            </style>
+          </div>
         </div>
       </section>
 
