@@ -547,15 +547,6 @@ export function Home() {
                 ))}
               </div>
             </div>
-            <div className="flex justify-center mt-8">
-              <Link
-                to="/reviews"
-                className="flex items-center text-blue-600 hover:text-blue-800 transition font-medium"
-              >
-                Xem tất cả đánh giá
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Link>
-            </div>
             <style>
               {`
                 @keyframes slide {
