@@ -13,7 +13,21 @@ import {
   Upload,
   Download,
   Loader,
-  Eye
+  Eye,
+  AlertCircle,
+  ShieldCheck,
+  Printer, 
+  Recycle, 
+  Clock, 
+  Star, 
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  User,
+  UserPlus,
+  BarChart3,
+  Calendar
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import JSZip from 'jszip';
@@ -2700,12 +2714,16 @@ function CaseTypes() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCaseType, setEditingCaseType] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [caseImage, setCaseImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   
   // Form states
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    price: 0
+    price: 0,
+    image_url: ''
   });
 
   useEffect(() => {
@@ -2734,47 +2752,163 @@ function CaseTypes() {
     setFormData(prev => ({ ...prev, [name]: value }));
   }
 
+  function handleCaseImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image file size must be less than 5MB');
+      return;
+    }
+    
+    // Check file type (must be image)
+    if (!file.type.startsWith('image/')) {
+      setError('File must be an image (JPEG, PNG, etc.)');
+      return;
+    }
+    
+    setCaseImage(file);
+    
+    // Create a preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+  }
+
+  function handleEditCaseImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image file size must be less than 5MB');
+      return;
+    }
+    
+    // Check file type (must be image)
+    if (!file.type.startsWith('image/')) {
+      setError('File must be an image (JPEG, PNG, etc.)');
+      return;
+    }
+    
+    setCaseImage(file);
+    
+    // Create a preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+    
+    // This preview will be shown instead of the current image
+    setEditingCaseType({...editingCaseType, image_preview: previewUrl});
+  }
+
+  async function uploadCaseImage(file: File): Promise<string | null> {
+    try {
+      // Get the file extension and name separately to add timestamp
+      const originalName = file.name;
+      const lastDotIndex = originalName.lastIndexOf('.');
+      const fileName = lastDotIndex > 0 ? originalName.substring(0, lastDotIndex) : originalName;
+      const fileExt = lastDotIndex > 0 ? originalName.substring(lastDotIndex) : '';
+      
+      // Create timestamp
+      const timestamp = Date.now();
+      
+      // Create new filename with timestamp
+      const newFileName = `case_type_${timestamp}${fileExt}`;
+      const filePath = `phone_mockup/case_type_admin/${newFileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('case-assets')
+        .upload(filePath, file, {
+          upsert: true // This will overwrite if file exists
+        });
+        
+      if (uploadError) throw uploadError;
+      
+      // Get the public URL for the file
+      const { data } = supabase.storage
+        .from('case-assets')
+        .getPublicUrl(filePath);
+        
+      return data.publicUrl;
+    } catch (error: any) {
+      console.error('Error uploading case image:', error.message);
+      return null;
+    }
+  }
+
   async function handleAddCaseType(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setImageUploading(true);
 
     try {
+      let imageUrl = null;
+      
+      // Upload image if provided
+      if (caseImage) {
+        imageUrl = await uploadCaseImage(caseImage);
+        if (!imageUrl) throw new Error('Failed to upload case image');
+      }
+      
       const { error } = await supabase
         .from('case_types')
-        .insert([formData]);
+        .insert([{
+          name: formData.name,
+          description: formData.description,
+          price: formData.price,
+          image_url: imageUrl
+        }]);
 
       if (error) throw error;
 
-      setFormData({ name: '', description: '', price: 0 });
+      setFormData({ name: '', description: '', price: 0, image_url: '' });
+      setCaseImage(null);
+      setImagePreview(null);
       setShowAddForm(false);
       fetchCaseTypes();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setImageUploading(false);
     }
   }
 
   async function handleUpdateCaseType(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setImageUploading(true);
 
     if (!editingCaseType) return;
 
     try {
+      let imageUrl = editingCaseType.image_url;
+      
+      // Upload new image if provided
+      if (caseImage) {
+        imageUrl = await uploadCaseImage(caseImage);
+        if (!imageUrl) throw new Error('Failed to upload case image');
+      }
+      
       const { error } = await supabase
         .from('case_types')
         .update({
           name: editingCaseType.name,
           description: editingCaseType.description,
-          price: editingCaseType.price
+          price: editingCaseType.price,
+          image_url: imageUrl
         })
         .eq('id', editingCaseType.id);
 
       if (error) throw error;
 
       setEditingCaseType(null);
+      setCaseImage(null);
+      setImagePreview(null);
       fetchCaseTypes();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setImageUploading(false);
     }
   }
 
@@ -2782,6 +2916,33 @@ function CaseTypes() {
     if (!confirm('Are you sure you want to delete this case type? This will also delete all inventory items associated with this type.')) return;
 
     try {
+      // Get case type to check if it has an image
+      const { data: caseTypeData, error: fetchError } = await supabase
+        .from('case_types')
+        .select('image_url')
+        .eq('id', id)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      // If the case type has an image URL, extract the path and delete it from storage
+      if (caseTypeData?.image_url) {
+        // The URL will be something like https://xyz.supabase.co/storage/v1/object/public/case-assets/phone_mockup/case_type_admin/file.jpg
+        // We need to extract the path after case-assets/
+        const storageUrl = supabase.storage.from('case-assets').getPublicUrl('').data.publicUrl;
+        const pathToDelete = caseTypeData.image_url.replace(storageUrl, '');
+        
+        if (pathToDelete) {
+          const { error: deleteImageError } = await supabase.storage
+            .from('case-assets')
+            .remove([pathToDelete]);
+            
+          if (deleteImageError) {
+            console.error('Error deleting case type image:', deleteImageError);
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('case_types')
         .delete()
@@ -2799,6 +2960,15 @@ function CaseTypes() {
       }
     }
   }
+
+  // Clear preview URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   return (
     <div className="space-y-6">
@@ -2875,16 +3045,51 @@ function CaseTypes() {
                 step="0.01"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Case Image (displays in Featured Collection)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleCaseImageChange}
+                className="w-full p-2 border rounded-lg"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload an image for this case type. It will be displayed in the Featured Collection on the homepage.
+              </p>
+              {imagePreview && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Image Preview:</p>
+                  <img src={imagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg border" />
+                </div>
+              )}
+            </div>
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+                className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center gap-2"
+                disabled={imageUploading}
               >
-                Add Case Type
+                {imageUploading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Uploading...
+                  </>
+                ) : (
+                  'Add Case Type'
+                )}
               </button>
               <button
                 type="button"
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowAddForm(false);
+                  setCaseImage(null);
+                  setImagePreview(null);
+                }}
                 className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
               >
                 Cancel
@@ -2935,16 +3140,58 @@ function CaseTypes() {
                 step="0.01"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Case Image (displays in Featured Collection)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleEditCaseImageChange}
+                className="w-full p-2 border rounded-lg"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload a new image or leave empty to keep the current one.
+              </p>
+              
+              {/* Show either the new preview or the existing image */}
+              {editingCaseType.image_preview ? (
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-gray-700 mb-1">New Image Preview:</p>
+                  <img src={editingCaseType.image_preview} alt="Preview" className="w-32 h-32 object-cover rounded-lg border" />
+                </div>
+              ) : editingCaseType.image_url ? (
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Current Image:</p>
+                  <img src={editingCaseType.image_url} alt="Current" className="w-32 h-32 object-cover rounded-lg border" />
+                </div>
+              ) : null}
+            </div>
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+                className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center gap-2"
+                disabled={imageUploading}
               >
-                Save Changes
+                {imageUploading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </button>
               <button
                 type="button"
-                onClick={() => setEditingCaseType(null)}
+                onClick={() => {
+                  setEditingCaseType(null);
+                  setCaseImage(null);
+                  setImagePreview(null);
+                }}
                 className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
               >
                 Cancel
@@ -2954,56 +3201,86 @@ function CaseTypes() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm">
-        <div className="p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search case types..."
-                className="w-full pl-10 pr-4 py-2 border rounded-lg"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search case types..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full p-2 border rounded-lg"
+          />
+        </div>
 
-          {loading ? (
-            <div className="text-center py-4">Loading...</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3">Name</th>
-                    <th className="text-left py-3">Description</th>
-                    <th className="text-left py-3">Price</th>
-                    <th className="text-left py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {caseTypes
-                    .filter(caseType => 
-                      caseType.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      caseType.description?.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map(caseType => (
-                    <tr key={caseType.id} className="border-b">
-                      <td className="py-3 font-medium">{caseType.name}</td>
-                      <td className="py-3 text-gray-600">{caseType.description || '-'}</td>
-                      <td className="py-3">${caseType.price.toFixed(2)}</td>
-                      <td className="py-3">
-                        <div className="flex gap-2">
-                          <button 
-                            className="p-1 hover:bg-gray-100 rounded"
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+          </div>
+        ) : caseTypes.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No case types found.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Image
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {caseTypes
+                  .filter(caseType => 
+                    caseType.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (caseType.description && caseType.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                  )
+                  .map(caseType => (
+                    <tr key={caseType.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{caseType.name}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-500">{caseType.description || 'No description'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">${caseType.price.toFixed(2)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {caseType.image_url ? (
+                          <img 
+                            src={caseType.image_url} 
+                            alt={caseType.name}
+                            className="h-12 w-12 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <span className="text-sm text-gray-500">No image</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex space-x-2">
+                          <button
                             onClick={() => setEditingCaseType(caseType)}
+                            className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
+                            title="Edit case type"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
-                          <button 
-                            className="p-1 hover:bg-gray-100 rounded text-red-500"
+                          <button
                             onClick={() => handleDeleteCaseType(caseType.id)}
+                            className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                            title="Delete case type"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -3011,11 +3288,10 @@ function CaseTypes() {
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -267,19 +267,24 @@ export function Home() {
 
   // Function to get the appropriate image URL for a case
   const getCaseImageUrl = (caseItem: CaseType, brand: string = '', deviceName: string = ''): string => {
-    // If brand and device name are provided, check specific path first
+    // First check if the case has its own image_url
+    if (caseItem.image_url) {
+      return caseItem.image_url;
+    }
+    
+    // If brand and device name are provided, check specific path next
     if (brand && deviceName && caseItem.name) {
       const specificPath = `/phone_case/${brand}/${deviceName.replace(/\s+/g, '_')}/${caseItem.name.replace(/\s+/g, '_')}.png`;
       // We would check if this exists, but for now we'll just use the map or fallback
     }
     
-    // First check if we have a mapped Clear Case image
+    // Then check if we have a mapped Clear Case image
     if (caseImageMap[caseItem.id]) {
       return caseImageMap[caseItem.id];
     }
     
-    // Otherwise, use the case's own image or fallback
-    return caseItem.image_url || FALLBACK_CASE_IMAGE;
+    // Finally, use the fallback
+    return FALLBACK_CASE_IMAGE;
   };
 
   // Check if a case type has inventory available
