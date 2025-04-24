@@ -49,7 +49,7 @@ const DIRECT_BUY_CASE_TYPES = ['Leather Case', 'MagSafe Case'];
 
 // Partner logos - reliable image URLs
 const PARTNERS = [
-  { name: "OPPO", logo: "https://logos-world.net/wp-content/uploads/2020/07/Oppo-Logo.png" },
+  { name: "OPPO", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a2/OPPO_LOGO_2019.png" },
   { name: "Samsung", logo: "https://logos-world.net/wp-content/uploads/2020/04/Samsung-Logo.png" },
   { name: "Apple", logo: "https://logos-world.net/wp-content/uploads/2020/04/Apple-Logo.png" },
   { name: "Viettel", logo: "https://upload.wikimedia.org/wikipedia/commons/f/fe/Viettel_logo_2021.svg" },
